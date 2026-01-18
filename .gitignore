@@ -1,0 +1,13 @@
+
+build/
+
+__pycache__/
+
+*.pyc
+
+*.o
+
+.idea/
+
+.vscode/
+
