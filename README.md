@@ -1006,8 +1006,4 @@ Triangulation Quality:
 
 ## Author
 
-Jixian Wang
-
-## License
-
-[Your License Here]
+Jixian T
