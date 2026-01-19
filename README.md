@@ -85,7 +85,7 @@ When a SLAM system detects a loop closure, the camera trajectory is corrected, b
 │  • Poisson reconstruction (D8 + D9)                                          │
 │  • Compute signed distance field                                             │
 │  • Prune outliers                                                            │
-│  • Output: warped_map_v164.tsdf, warped_tsdf_mesh_v164.ply                   │
+│  • Output: warped_map.tsdf, warped_tsdf_mesh.ply                   │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -754,11 +754,11 @@ Triangulation Quality:
 
 7. SAVE OUTPUTS
    ┌─────────────────────────────────────────────────────────────────┐
-   │ TSDF: warped_map_v164.tsdf                                       │
+   │ TSDF: warped_map.tsdf                                       │
    │   Format: Protobuf (Block_pb2, Layer_pb2)                        │
    │   Contains: voxel_size, vps, block origins, SDF + weight data   │
    │                                                                  │
-   │ Mesh: warped_tsdf_mesh_v164.ply                                  │
+   │ Mesh: warped_tsdf_mesh.ply                                  │
    │   Format: PLY (vertices, triangles, normals)                     │
    └─────────────────────────────────────────────────────────────────┘
 
@@ -878,8 +878,8 @@ Triangulation Quality:
 | `optimization_data.txt` | Ray casting correspondences | 12,888 points |
 | `optimized_points_final.txt` | Triangulated control points | 12,888 points |
 | `mesh_deformed_arap.ply` | ARAP-deformed mesh | 63,343 vertices |
-| `warped_map_v164.tsdf` | Final TSDF map | 298 blocks |
-| `warped_tsdf_mesh_v164.ply` | Final mesh from TSDF | 56,845 vertices |
+| `warped_map.tsdf` | Final TSDF map | 298 blocks |
+| `warped_tsdf_mesh.ply` | Final mesh from TSDF | 56,845 vertices |
 
 ---
 
