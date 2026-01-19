@@ -903,7 +903,48 @@ Triangulation Quality:
 | **TSDF** | **+27.5%** | **+22.6%** | **+12.7%** |
 
 ---
+INPUT: Pre-loop Mesh + Pre/Post Trajectory + Depth Images
+OUTPUT: Warped TSDF Map + Mesh
 
+┌────────────────────────────────────────────────┐
+│ STEP 1: Ray Caster (C++)            ⏱️ 0.43s  │
+├────────────────────────────────────────────────┤
+│ Project mesh vertices → depth images           │
+│ 7-stage filtering → valid correspondences      │
+│ 72K verts → 2M pairs → 12,888 points          │
+└────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────┐
+│ STEP 2: Triangulator (C++)          ⏱️ 0.17s  │
+├────────────────────────────────────────────────┤
+│ Backproject with POST-loop poses               │
+│ Weighted average → target positions            │
+│ 12,888 points, avg displacement: 594mm         │
+└────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────┐
+│ STEP 3: ARAP Warping (Python)       ⏱️ 0.89s  │
+├────────────────────────────────────────────────┤
+│ Clean mesh → match controls → ARAP deform      │
+│ 72K → 63K verts, 12,731 control points        │
+└────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────┐
+│ STEP 4: Mesh → TSDF (Python)        ⏱️ 3.87s  │
+├────────────────────────────────────────────────┤
+│ Poisson(D8+D9) → SDF → refine → prune         │
+│ 298 blocks, 56,845 vertices                    │
+└────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌────────────────────────────────────────────────┐
+│ STEP 5: Evaluation (Python)                    │
+├────────────────────────────────────────────────┤
+│ P/R/F-score @ 10cm, 25cm, 50cm                 │
+└────────────────────────────────────────────────┘
 ## Author
 
 Jixian T
