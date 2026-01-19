@@ -118,70 +118,7 @@ When a SLAM system detects a loop closure, the camera trajectory is corrected, b
 
 ---
 
-## Directory Structure
 
-```
-/Datasets/
-├── Work_Data/ACL_OneLoop20251220_214841/
-│   ├── loop_1_1670449626.805310/
-│   │   ├── pre/
-│   │   │   ├── mesh.ply                          # Input: Pre-loop mesh
-│   │   │   └── standard_trajectory_no_loop.txt   # Input: Pre-loop trajectory
-│   │   └── post/
-│   │       ├── mesh.ply                          # Reference: Post-loop mesh
-│   │       ├── map.tsdf                          # Reference: Post-loop TSDF
-│   │       └── standard_trajectory_with_loop.txt # Input: Post-loop trajectory
-│   ├── O3D_GT/
-│   │   └── mesh_post_pointcloud.ply              # Ground truth mesh
-│   ├── Output/
-│   │   ├── optimization_data.txt                 # Step 1 output
-│   │   ├── optimized_points_final.txt            # Step 2 output
-│   │   └── Warped_Results/
-│   │       ├── mesh_deformed_arap.ply            # Step 3 output
-│   │       ├── warped_map_v164.tsdf              # Step 4 output (TSDF)
-│   │       └── warped_tsdf_mesh_v164.ply         # Step 4 output (mesh)
-│   └── Script/
-│       └── eval_fscore.py                        # Step 5: Evaluation
-├── Voxmap/
-│   ├── Ray_Casting/
-│   │   ├── main.cpp                              # Step 1: Ray Caster
-│   │   └── build/
-│   ├── mesh_warping.py                           # Step 3: ARAP
-│   └── mesh_to_TSDF.py                           # Step 4: TSDF conversion
-├── CERES_Work/
-│   ├── main.cpp                                  # Step 2: Triangulator
-│   └── build/
-└── Kimera/Kimera_Clipped_bag/
-    └── 12_07_acl_jackal2_clipped.bag             # Input: Depth images
-```
-
----
-
-## Execution Order
-
-```bash
-# Step 1: Ray Caster - Find mesh-depth correspondences
-cd /Datasets/Voxmap/Ray_Casting/build
-make
-./ray_caster
-
-# Step 2: Lindstrom Triangulator - Compute target positions
-cd /Datasets/CERES_Work/build
-make
-./ceres_example
-
-# Step 3: ARAP Mesh Deformation
-cd /home/jixian/Desktop/orbslam3_docker/Datasets/Voxmap/
-python3 mesh_warping.py
-
-# Step 4: Convert to TSDF
-cd /home/jixian/Desktop/orbslam3_docker/Datasets/Voxmap/
-python3 mesh_to_TSDF.py
-
-# Step 5: Evaluation
-cd /home/jixian/Desktop/orbslam3_docker/Datasets/Work_Data/ACL_OneLoop20251220_214841/Script/
-python3 eval_fscore.py
-```
 
 ---
 
@@ -320,14 +257,6 @@ height = 480          // Image height
    │     • Interpolate: depth_meas = bilinear(d00, d01, d10, d11)    │
    │     • Require ≥ 2 valid depth samples                           │
    │                                                                  │
-   │   CHECK 4: 3D distance threshold (adaptive)                      │
-   │     • Backproject measured depth to world:                       │
-   │       x_cam = (u - cx) × depth / fx                              │
-   │       y_cam = (v - cy) × depth / fy                              │
-   │       P_world = T_wc × [x_cam, y_cam, depth]ᵀ                   │
-   │     • Compute distance: d = ||P_world - mesh_vertex||           │
-   │     • Threshold: base_threshold + 0.01 × depth_proj             │
-   │     • Reject if distance > threshold                             │
    │                                                                  │
    │   CHECK 5: Depth consistency                                     │
    │     • diff = |depth_projected - depth_measured|                 │
@@ -349,7 +278,7 @@ height = 480          // Image height
    │     weight = dist_weight × depth_weight × cos_angle             │
    │     Reject if weight < 0.05                                      │
    │                                                                  │
-   │ Result: 31,930 observations passed (1.6% pass rate)              │
+   │ Result: 31,930 observations passed                               │
    │         12,888 unique mesh vertices with observations            │
    └─────────────────────────────────────────────────────────────────┘
    
@@ -385,7 +314,7 @@ height = 480          // Image height
 
 ```
 Checked: 1,994,154 candidate pairs
-Passed:  31,930 observations (1.6%)
+Passed:  31,930 observations
 Points:  12,888 unique mesh vertices
 ```
 
@@ -449,7 +378,7 @@ CY = 240.426878936
    │   • Store all observations                                       │
    │   • Track anchor flag from input                                 │
    │                                                                  │
-   │ Output: 12,888 points (0 anchors, 12,888 moving)                 │
+   │ Output: 12,888 points new position                               │
    └─────────────────────────────────────────────────────────────────┘
 
 3. TRIANGULATE TARGET POSITIONS
@@ -493,21 +422,9 @@ CY = 240.426878936
    │ Result: Target position for each control point                   │
    └─────────────────────────────────────────────────────────────────┘
 
-4. DETERMINE ANCHOR FLAGS (based on anchor_mode)
-   ┌─────────────────────────────────────────────────────────────────┐
-   │ Mode 0: All points treated as moving (no anchors)               │
-   │         is_anchor_output = false for all                         │
-   │                                                                  │
-   │ Mode 1: Use input anchor flag                                    │
-   │         is_anchor_output = is_anchor_input                       │
-   │                                                                  │
-   │ Mode 2: Determine by displacement threshold                      │
-   │         is_anchor_output = (displacement < threshold)            │
-   │                                                                  │
-   │ Current run: Mode 0 → 0 anchors, 12,888 moving                  │
-   └─────────────────────────────────────────────────────────────────┘
 
-5. EVALUATE TRIANGULATION QUALITY
+
+4. EVALUATE TRIANGULATION QUALITY
    ┌─────────────────────────────────────────────────────────────────┐
    │ For each point and observation:                                  │
    │   • Project TARGET position back to camera using T_cw           │
@@ -519,7 +436,7 @@ CY = 240.426878936
    │   Depth error:  avg=25.1mm, median=10.7mm                        │
    └─────────────────────────────────────────────────────────────────┘
 
-6. SAVE RESULTS
+5. SAVE RESULTS
    ┌─────────────────────────────────────────────────────────────────┐
    │ Output: optimized_points_final.txt                               │
    │                                                                  │
@@ -984,23 +901,6 @@ Triangulation Quality:
 | Post | +27.3% | +19.5% | +10.8% |
 | Warped | +26.7% | +20.5% | +12.1% |
 | **TSDF** | **+27.5%** | **+22.6%** | **+12.7%** |
-
----
-
-## Key Insights
-
-1. **Ray Casting Pass Rate**: Only 1.6% of candidate correspondences pass all verification checks, ensuring high-quality control points.
-
-2. **Displacement Distribution**: Mean displacement is ~594mm with max ~2.5m, indicating significant loop closure corrections.
-
-3. **ARAP Preservation**: Control point error is 0.00mm, confirming ARAP exactly satisfies control constraints.
-
-4. **TSDF Improvement**: The TSDF output slightly outperforms direct ARAP warping due to Poisson smoothing and outlier pruning.
-
-5. **Warped vs Post Comparison**: 
-   - Warped mesh achieves comparable F-score to Post mesh
-   - At 25cm and 50cm thresholds, Warped actually outperforms Post
-   - This validates the warping approach as an effective alternative to re-mapping
 
 ---
 
